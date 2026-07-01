@@ -247,7 +247,7 @@ let done = false;
 
 function migrateToParts(t){
   if(t.parts) return t.parts;
-  return [{ name:'Toàn bài', driveUrl:t.driveUrl, questions:t.questions||[] }];
+  return [{ name:'Toàn bài', audioUrl:t.audioUrl||t.driveUrl, questions:t.questions||[] }];
 }
 
 function totalQuestions(t){
@@ -381,11 +381,15 @@ function buildPlayers(){
     </div>`).join('');
 
   cur.parts.forEach((p,pi)=>{
-    const id=driveId(p.driveUrl)||'';
-    const a=new Audio(`https://drive.google.com/uc?export=download&id=${id}`);
+    const url=p.audioUrl||p.driveUrl||'';
+    const a=new Audio(url);
     a.addEventListener('loadedmetadata',()=>{ const el=document.getElementById('dur-time-'+pi); if(el) el.textContent=fmt(a.duration); });
     a.addEventListener('timeupdate',()=>updateProg(pi));
     a.addEventListener('ended',()=>{ const ic=document.getElementById('play-icon-'+pi); if(ic) ic.className='fa-solid fa-play'; partAudios[pi].playing=false; });
+    a.addEventListener('error',()=>{
+      const msg=document.getElementById('blocked-msg-'+pi);
+      if(msg){ msg.classList.remove('hidden'); msg.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Không tải được audio phần này. Báo giáo viên kiểm tra lại link.'; }
+    });
     partAudios[pi].audio=a;
     updateChip(pi);
   });
@@ -626,7 +630,6 @@ async function sendSheet(name,cls,correct,total,scored,pct,detail){
 
 function backToList(){ partAudios.forEach(st=>{ if(st.audio) st.audio.pause(); }); partAudios=[]; showSec('sec-list'); loadTests(); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function driveId(url){const m=(url||'').match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null}
 
 // Khởi động
 loadTests();
