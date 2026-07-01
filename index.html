@@ -538,7 +538,7 @@ function submitTest(){
   const cls=document.getElementById('st-class').value.trim();
 
   lockAnswers(detail);
-  showResult(name,cls,correct,qFlat.length,scored,cur.total,pct,pass);
+  showResult(name,cls,correct,qFlat.length,scored,cur.total,pct,pass,detail);
   sendSheet(name,cls,correct,qFlat.length,scored,pct,detail);
   setStep(3);
 }
@@ -569,7 +569,7 @@ function lockAnswers(detail){
   });
 }
 
-function showResult(name,cls,correct,total,scored,scoreRaw,pct,pass){
+function showResult(name,cls,correct,total,scored,scoreRaw,pct,pass,detail){
   document.getElementById('result-hero').className='result-hero '+(pass?'pass':'fail');
   document.getElementById('result-hero').innerHTML=`
     <div class="r-score ${pass?'pass':'fail'}">${scored}/${scoreRaw}</div>
