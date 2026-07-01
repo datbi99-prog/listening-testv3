@@ -256,7 +256,7 @@ textarea.q-text{min-height:64px;line-height:1.5}
         <div class="card-title"><i class="fa-solid fa-layer-group" style="margin-right:5px"></i>Các phần nghe (Part)</div>
         <button class="btn btn-accent btn-sm" onclick="addPart()"><i class="fa-solid fa-plus"></i> Thêm Part</button>
       </div>
-      <div class="alert alert-info"><i class="fa-solid fa-circle-info"></i> Mỗi Part có 1 file audio riêng và câu hỏi riêng. Tất cả Part dùng chung số lần nghe tối đa đã đặt ở trên.</div>
+      <div class="alert alert-info"><i class="fa-solid fa-circle-info"></i> Mỗi Part có 1 file audio riêng và câu hỏi riêng. Tất cả Part dùng chung số lần nghe tối đa đã đặt ở trên. Audio cần được upload vào folder <code>audio/</code> trong repository GitHub trước — sau đó dán link đầy đủ vào từng Part.</div>
       <div id="parts-wrap" style="margin-top:1rem"></div>
       <button class="btn btn-ghost btn-sm" onclick="addPart()" style="margin-top:.75rem;width:100%;justify-content:center;border-style:dashed">
         <i class="fa-solid fa-plus"></i> Thêm Part mới
@@ -458,7 +458,7 @@ async function renderTestList(){
 // ============================================================
 function migrateToParts(t){
   if(t.parts) return t.parts;
-  return [{ name:'Toàn bài', driveUrl:t.driveUrl||'', questions:t.questions||[] }];
+  return [{ name:'Toàn bài', audioUrl:t.audioUrl||t.driveUrl||'', questions:t.questions||[] }];
 }
 
 function totalQuestions(t){
@@ -510,8 +510,8 @@ function addPart(data){
         <input type="text" class="part-name" value="${esc(defaultName)}">
       </div>
       <div class="field">
-        <label class="lbl">Link Google Drive (MP3) <span style="color:var(--danger)">*</span></label>
-        <input type="url" class="part-drive" value="${esc(data?data.driveUrl:'')}" placeholder="https://drive.google.com/file/d/FILE_ID/view">
+        <label class="lbl">Link file audio (đã upload lên GitHub) <span style="color:var(--danger)">*</span></label>
+        <input type="url" class="part-audio-url" value="${esc(data?(data.audioUrl||data.driveUrl||''):'')}" placeholder="https://tenban.github.io/repo/audio/unit3-part1.mp3">
       </div>
     </div>
     <button class="btn btn-ghost btn-xs" onclick="previewPartAudio(this)"><i class="fa-solid fa-play"></i> Nghe thử</button>
@@ -539,14 +539,13 @@ function renumberParts(){
 
 function previewPartAudio(btn){
   const partDiv=btn.closest('.part-block');
-  const url=partDiv.querySelector('.part-drive').value.trim();
-  if(!url){alert('Nhập link Google Drive cho Part này trước.');return;}
-  const id=driveId(url);
-  if(!id){alert('Không nhận ra link Drive.');return;}
+  const url=partDiv.querySelector('.part-audio-url').value.trim();
+  if(!url){alert('Nhập link file audio cho Part này trước.');return;}
   const wrap=partDiv.querySelector('.part-audio-wrap');
   const el=partDiv.querySelector('.part-audio-el');
-  el.src=`https://drive.google.com/uc?export=download&id=${id}`;
   wrap.classList.remove('hidden');
+  el.onerror = ()=>alert('Không tải được file audio. Kiểm tra lại link — đảm bảo file đã được upload lên GitHub và link đúng định dạng.');
+  el.src=url;
 }
 
 // ---- Quản lý câu hỏi trong 1 Part ----
@@ -615,8 +614,8 @@ async function saveTest(){
   partBlocks.forEach((pd,pIdx)=>{
     if(!ok) return;
     const pname=pd.querySelector('.part-name').value.trim()||`Part ${pIdx+1}`;
-    const driveUrl=pd.querySelector('.part-drive').value.trim();
-    if(!driveUrl){alert(`${pname}: chưa nhập link Google Drive.`);ok=false;return;}
+    const audioUrl=pd.querySelector('.part-audio-url').value.trim();
+    if(!audioUrl){alert(`${pname}: chưa nhập link file audio.`);ok=false;return;}
     const qBlocks=pd.querySelectorAll('.q-builder');
     if(!qBlocks.length){alert(`${pname}: chưa có câu hỏi nào.`);ok=false;return;}
     let questions=[];
@@ -638,7 +637,7 @@ async function saveTest(){
       }
     });
     if(!ok) return;
-    parts.push({name:pname, driveUrl, questions});
+    parts.push({name:pname, audioUrl, questions});
   });
   if(!ok) return;
 
@@ -724,7 +723,6 @@ function showPreview(i){
 //  UTILS
 // ============================================================
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function driveId(url){const m=(url||'').match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null}
 </script>
 </body>
 </html>
