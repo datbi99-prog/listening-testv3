@@ -545,7 +545,7 @@ function previewPartAudio(btn){
   if(!id){alert('Không nhận ra link Drive.');return;}
   const wrap=partDiv.querySelector('.part-audio-wrap');
   const el=partDiv.querySelector('.part-audio-el');
-  el.src=`https://drive.google.com/uc?export=open&id=${id}`;
+  el.src=`https://drive.google.com/uc?export=download&id=${id}`;
   wrap.classList.remove('hidden');
 }
 
