@@ -84,6 +84,10 @@ textarea{resize:vertical;min-height:72px}
 .correct-opt{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:4px 10px;border-radius:6px;border:1px solid var(--gray2);background:#fff;transition:.12s}
 .correct-opt input{accent-color:var(--accent);margin:0}
 .correct-opt:has(input:checked){background:var(--success-bg);border-color:var(--success-bd);color:var(--success)}
+.qtype-toggle{display:flex;gap:6px;margin-bottom:.9rem}
+.qtype-btn{flex:1;padding:8px 0;text-align:center;border:1px solid var(--gray2);border-radius:8px;background:#fff;font-size:13px;font-weight:500;color:var(--gray5);cursor:pointer;transition:.12s}
+.qtype-btn.active{background:var(--accent-lt);border-color:var(--accent);color:var(--accent-dk)}
+.sa-hint{font-size:12px;color:var(--gray4);margin-top:5px}
 .alert{display:flex;align-items:flex-start;gap:9px;padding:11px 14px;border-radius:8px;font-size:13px;margin-top:10px}
 .alert i{margin-top:1px;flex-shrink:0}
 .alert-err{background:var(--danger-bg);border:1px solid var(--danger-bd);color:var(--danger)}
@@ -289,7 +293,7 @@ textarea{resize:vertical;min-height:72px}
 
 <script>
 // ⚠️ QUAN TRỌNG: Dán CÙNG URL Google Apps Script như trong file index.html (trang học sinh)
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxWjzyXPN5QOyztEgivFCXRMsoOkRPyEzR5BQr44OxO16T9x86U4fJ910-K9C7dugiqXQ/exec';
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzk7ZFhLgPIkeuxDD7cd5W4f1KnD3TkPEBOC2rzRdNNCNz1Ee8_DwFofPCnrKOVCbkuOw/exec';
 
 // ============================================================
 //  MẬT KHẨU HASH SHA-256
@@ -490,6 +494,7 @@ function closeEditor(){ document.getElementById('editor-wrap').classList.add('hi
 function addQ(data){
   qCount++;
   const n=qCount;
+  const type = data ? (data.type||'mc') : 'mc';
   const wrap=document.getElementById('q-wrap');
   const div=document.createElement('div');
   div.className='q-builder'; div.dataset.qid=n;
@@ -498,19 +503,42 @@ function addQ(data){
       <span class="q-num">Câu ${n}</span>
       <button class="q-del" onclick="this.closest('.q-builder').remove();updateQCount()" title="Xoá câu"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    <div class="qtype-toggle">
+      <button type="button" class="qtype-btn ${type==='mc'?'active':''}" onclick="setQType(this,${n},'mc')"><i class="fa-solid fa-list-check"></i> Trắc nghiệm</button>
+      <button type="button" class="qtype-btn ${type==='sa'?'active':''}" onclick="setQType(this,${n},'sa')"><i class="fa-solid fa-pen"></i> Tự luận</button>
+    </div>
+    <input type="hidden" class="q-type" value="${type}">
     <div class="field" style="margin-bottom:.75rem">
       <label class="lbl">Nội dung câu hỏi</label>
       <input type="text" class="q-text" value="${esc(data?data.text:'')}">
     </div>
-    <div class="opts-grid">
-      ${['A','B','C','D'].map(o=>`<div class="opt-row"><div class="opt-letter">${o}</div><input type="text" class="opt-${o}" value="${esc(data&&data.opts?data.opts[o]||'':'')}"></div>`).join('')}
+    <div class="q-mc-body" style="${type==='sa'?'display:none':''}">
+      <div class="opts-grid">
+        ${['A','B','C','D'].map(o=>`<div class="opt-row"><div class="opt-letter">${o}</div><input type="text" class="opt-${o}" value="${esc(data&&data.opts?data.opts[o]||'':'')}"></div>`).join('')}
+      </div>
+      <div class="correct-row">
+        <span>Đáp án đúng:</span>
+        ${['A','B','C','D'].map(o=>`<label class="correct-opt"><input type="radio" name="correct-${n}" value="${o}" ${data&&data.correct===o?'checked':''}> ${o}</label>`).join('')}
+      </div>
     </div>
-    <div class="correct-row">
-      <span>Đáp án đúng:</span>
-      ${['A','B','C','D'].map(o=>`<label class="correct-opt"><input type="radio" name="correct-${n}" value="${o}" ${data&&data.correct===o?'checked':''}> ${o}</label>`).join('')}
+    <div class="q-sa-body" style="${type==='mc'?'display:none':''}">
+      <div class="field" style="margin-bottom:0">
+        <label class="lbl">Đáp án mẫu (đúng)</label>
+        <input type="text" class="sa-answer" value="${esc(data&&data.answer?data.answer:'')}" placeholder="VD: museum">
+        <div class="sa-hint">Có thể nhập nhiều đáp án chấp nhận được, ngăn cách bởi dấu <strong>|</strong> — VD: <code>museum|the museum</code>. Không phân biệt hoa/thường, tự bỏ khoảng trắng dư.</div>
+      </div>
     </div>`;
   wrap.appendChild(div);
   updateQCount();
+}
+
+function setQType(btn,n,type){
+  const block=btn.closest('.q-builder');
+  block.querySelector('.q-type').value=type;
+  block.querySelectorAll('.qtype-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  block.querySelector('.q-mc-body').style.display = type==='mc' ? '' : 'none';
+  block.querySelector('.q-sa-body').style.display = type==='sa' ? '' : 'none';
 }
 
 function updateQCount(){ document.getElementById('q-count').textContent=document.querySelectorAll('.q-builder').length; }
@@ -538,11 +566,19 @@ async function saveTest(){
   let questions=[]; let ok=true;
   blocks.forEach((b,i)=>{
     const text=b.querySelector('.q-text').value.trim();
-    const opts={A:b.querySelector('.opt-A').value.trim(),B:b.querySelector('.opt-B').value.trim(),C:b.querySelector('.opt-C').value.trim(),D:b.querySelector('.opt-D').value.trim()};
-    const corr=b.querySelector('input[type=radio]:checked');
-    if(!text||!opts.A||!opts.B||!opts.C||!opts.D){alert(`Câu ${i+1}: thiếu nội dung hoặc đáp án.`);ok=false;return;}
-    if(!corr){alert(`Câu ${i+1}: chưa chọn đáp án đúng.`);ok=false;return;}
-    questions.push({text,opts,correct:corr.value});
+    const qtype=b.querySelector('.q-type').value;
+    if(!text){alert(`Câu ${i+1}: thiếu nội dung câu hỏi.`);ok=false;return;}
+    if(qtype==='mc'){
+      const opts={A:b.querySelector('.opt-A').value.trim(),B:b.querySelector('.opt-B').value.trim(),C:b.querySelector('.opt-C').value.trim(),D:b.querySelector('.opt-D').value.trim()};
+      const corr=b.querySelector('input[type=radio]:checked');
+      if(!opts.A||!opts.B||!opts.C||!opts.D){alert(`Câu ${i+1}: thiếu đáp án A/B/C/D.`);ok=false;return;}
+      if(!corr){alert(`Câu ${i+1}: chưa chọn đáp án đúng.`);ok=false;return;}
+      questions.push({type:'mc',text,opts,correct:corr.value});
+    } else {
+      const answer=b.querySelector('.sa-answer').value.trim();
+      if(!answer){alert(`Câu ${i+1}: chưa nhập đáp án mẫu.`);ok=false;return;}
+      questions.push({type:'sa',text,answer});
+    }
   });
   if(!ok) return;
 
@@ -603,8 +639,10 @@ function showPreview(i){
     </div>
     ${t.questions.map((q,idx)=>`
       <div style="margin-bottom:1.25rem">
-        <div class="s-q-txt"><span class="q-lbl">${idx+1}.</span>${esc(q.text)}</div>
-        ${Object.entries(q.opts).map(([k,v])=>`
+        <div class="s-q-txt"><span class="q-lbl">${idx+1}.</span>${esc(q.text)} ${q.type==='sa'?'<span class="chip chip-gray" style="margin-left:6px">Tự luận</span>':''}</div>
+        ${q.type==='sa'
+          ? `<div class="pv-opt correct-ans"><div class="pv-bubble"><i class="fa-solid fa-pen" style="font-size:11px"></i></div><span style="font-size:14px;flex:1">Đáp án mẫu: <strong>${esc(q.answer)}</strong></span><i class="fa-solid fa-check" style="color:var(--success);margin-left:auto"></i></div>`
+          : Object.entries(q.opts).map(([k,v])=>`
           <div class="pv-opt ${k===q.correct?'correct-ans':''}">
             <div class="pv-bubble">${k}</div>
             <span style="font-size:14px;flex:1">${esc(v)}</span>
