@@ -97,6 +97,12 @@ input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,125,216,.12)
 .s-opt.wrong .opt-bubble{background:var(--danger);color:#fff}
 .s-opt.missed .opt-bubble{background:var(--warn);color:#fff}
 .opt-txt{font-size:14px;flex:1}
+.sa-input{width:100%;padding:12px 14px;border:1.5px solid var(--gray2);border-radius:9px;font-size:14px;font-family:var(--font);outline:none;transition:.15s}
+.sa-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,125,216,.12)}
+.sa-input.correct{border-color:var(--success);background:var(--success-bg);color:var(--success)}
+.sa-input.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger)}
+.sa-correct-note{font-size:12px;color:var(--success);margin-top:6px;display:flex;align-items:center;gap:5px}
+.sa-wrong-note{font-size:12px;color:var(--danger);margin-top:6px;display:flex;align-items:center;gap:5px}
 .opt-icon{margin-left:auto;font-size:14px}
 .result-hero{border-radius:14px;padding:2rem;text-align:center;margin-bottom:1rem}
 .result-hero.pass{background:var(--success-bg);border:2px solid var(--success-bd)}
@@ -242,7 +248,7 @@ input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,125,216,.12)
 
 // ⚠️ QUAN TRỌNG: Dán URL Google Apps Script của bạn vào đây
 // Đây là URL công khai để ĐỌC danh sách bài — không phải mật khẩu, an toàn khi để trong code.
-const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxWjzyXPN5QOyztEgivFCXRMsoOkRPyEzR5BQr44OxO16T9x86U4fJ910-K9C7dugiqXQ/exec';
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzk7ZFhLgPIkeuxDD7cd5W4f1KnD3TkPEBOC2rzRdNNCNz1Ee8_DwFofPCnrKOVCbkuOw/exec';
 
 let tests = [];
 let cur = null;
@@ -412,7 +418,15 @@ function fmt(s){return Math.floor(s/60)+':'+(Math.floor(s%60)<10?'0':'')+Math.fl
 
 // ---- Câu hỏi ----
 function buildQuestions(){
-  document.getElementById('questions').innerHTML=cur.questions.map((q,i)=>`
+  document.getElementById('questions').innerHTML=cur.questions.map((q,i)=>{
+    if(q.type==='sa'){
+      return `
+      <div class="s-question" id="sq-${i}">
+        <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(q.text)}</div>
+        <input type="text" class="sa-input" id="sa-${i}" placeholder="Nhập câu trả lời..." oninput="pickSA(${i}, this.value)" autocomplete="off">
+      </div>`;
+    }
+    return `
     <div class="s-question" id="sq-${i}">
       <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(q.text)}</div>
       <div class="s-opts">
@@ -422,7 +436,14 @@ function buildQuestions(){
             <span class="opt-txt">${esc(v)}</span>
           </div>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+function pickSA(qi, val){
+  const v = val.trim();
+  if(v) answers[qi]=v; else delete answers[qi];
+  document.getElementById('mb-answered').childNodes[0].textContent=Object.keys(answers).length+'/';
 }
 
 function pick(qi,opt){
@@ -445,13 +466,21 @@ function submitTest(){
   if(audio){audio.pause();playing=false;}
   document.getElementById('play-btn').disabled=true;
   document.getElementById('submit-btn').disabled=true;
+  document.querySelectorAll('.sa-input').forEach(inp=>inp.disabled=true);
 
   let correct=0;
   const detail=cur.questions.map((q,i)=>{
     const chosen=answers[i];
-    const ok=chosen===q.correct;
+    let ok=false;
+    if(q.type==='sa'){
+      const accepted = q.answer.split('|').map(a=>a.trim().toLowerCase()).filter(Boolean);
+      ok = accepted.includes((chosen||'').trim().toLowerCase());
+      if(ok) correct++;
+      return{type:'sa',chosen,answer:q.answer,ok,text:q.text};
+    }
+    ok=chosen===q.correct;
     if(ok) correct++;
-    return{chosen,answer:q.correct,ok,text:q.text,opts:q.opts};
+    return{type:'mc',chosen,answer:q.correct,ok,text:q.text,opts:q.opts};
   });
 
   const scored=Math.round((correct/cur.questions.length)*cur.total*10)/10;
@@ -468,6 +497,19 @@ function submitTest(){
 
 function lockAnswers(detail){
   detail.forEach((d,i)=>{
+    if(d.type==='sa'){
+      const inp=document.getElementById(`sa-${i}`);
+      if(!inp) return;
+      inp.disabled=true;
+      inp.classList.add(d.ok?'correct':'wrong');
+      const note=document.createElement('div');
+      note.className = d.ok?'sa-correct-note':'sa-wrong-note';
+      note.innerHTML = d.ok
+        ? `<i class="fa-solid fa-circle-check"></i> Chính xác`
+        : `<i class="fa-solid fa-circle-xmark"></i> Đáp án đúng: ${esc(d.answer.split('|')[0].trim())}`;
+      inp.insertAdjacentElement('afterend', note);
+      return;
+    }
     ['A','B','C','D'].forEach(o=>{
       const el=document.getElementById(`so-${i}-${o}`);
       if(!el) return;
@@ -498,7 +540,18 @@ function showResult(name,cls,correct,total,scored,scoreRaw,pct,pass){
 }
 
 function detail_html(detail){
-  return detail.map((d,i)=>`
+  return detail.map((d,i)=>{
+    if(d.type==='sa'){
+      return `
+      <div class="s-question">
+        <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(d.text)}</div>
+        <input type="text" class="sa-input ${d.ok?'correct':'wrong'}" value="${esc(d.chosen||'')}" disabled>
+        <div class="${d.ok?'sa-correct-note':'sa-wrong-note'}">
+          ${d.ok?'<i class="fa-solid fa-circle-check"></i> Chính xác':`<i class="fa-solid fa-circle-xmark"></i> Đáp án đúng: ${esc(d.answer.split('|')[0].trim())}`}
+        </div>
+      </div>`;
+    }
+    return `
     <div class="s-question">
       <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(d.text)}</div>
       <div class="s-opts">
@@ -511,13 +564,14 @@ function detail_html(detail){
           return `<div class="s-opt ${cls}"><div class="opt-bubble">${k}</div><span class="opt-txt">${esc(v)}</span>${icon}</div>`;
         }).join('')}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function sendSheet(name,cls,correct,total,scored,pct,detail){
   const bar=document.getElementById('sheet-bar');
   bar.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Đang ghi kết quả...';
-  const payload={action:'submit',testName:cur.name,studentName:name,studentClass:cls,correct,total,scored,pct,timestamp:new Date().toLocaleString('vi-VN'),answers:detail.map((d,i)=>({q:i+1,chosen:d.chosen,correct:d.answer,ok:d.ok}))};
+  const payload={action:'submit',testName:cur.name,studentName:name,studentClass:cls,correct,total,scored,pct,passPercent:(cur.passPercent||50),timestamp:new Date().toLocaleString('vi-VN'),answers:detail.map((d,i)=>({q:i+1,chosen:d.chosen,correct:d.answer,ok:d.ok}))};
   try{
     await fetch(SHEET_API_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
     bar.innerHTML='<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> <span style="color:var(--success)">Đã ghi kết quả vào Google Sheet.</span>';
