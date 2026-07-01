@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listening Test — Học sinh</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2744;--navy2:#243158;--navy3:#2e3e6e;
+  --accent:#3b7dd8;--accent-lt:#e8f0fd;--accent-dk:#2563b8;
+  --success:#16a34a;--success-bg:#f0fdf4;--success-bd:#bbf7d0;
+  --danger:#dc2626;--danger-bg:#fef2f2;--danger-bd:#fecaca;
+  --warn:#d97706;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --gray0:#f8f9fc;--gray1:#f1f3f8;--gray2:#e2e6f0;--gray3:#c8cede;
+  --gray4:#8e9ab5;--gray5:#5a6480;--gray6:#374162;
+  --text:#1c2238;
+  --radius:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
+  --font:'Inter',system-ui,sans-serif;
+}
+html{font-size:16px}
+body{font-family:var(--font);color:var(--text);background:var(--gray0);min-height:100vh}
+.page{max-width:800px;margin:0 auto;padding:0 1rem 4rem}
+header{background:var(--navy);padding:1rem 1.5rem;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-md)}
+.logo-icon{width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.logo-text{color:#fff;font-size:15px;font-weight:600}
+.logo-sub{color:rgba(255,255,255,.5);font-size:11px;font-weight:400}
+.card{background:#fff;border:1px solid var(--gray2);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow-sm)}
+.card-title{font-size:11px;font-weight:600;color:var(--gray4);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.25rem}
+.field{margin-bottom:1rem}
+label.lbl{display:block;font-size:13px;font-weight:500;color:var(--gray5);margin-bottom:5px}
+input[type=text]{width:100%;padding:10px 13px;border:1px solid var(--gray2);border-radius:8px;font-size:14px;color:var(--text);background:#fff;outline:none;font-family:var(--font);transition:.15s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,125,216,.12)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.grid2{grid-template-columns:1fr}}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;border:none;transition:.15s}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy2)}
+.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:var(--accent-dk)}
+.btn-ghost{background:#fff;color:var(--gray5);border:1px solid var(--gray2)}.btn-ghost:hover{background:var(--gray0)}
+.btn-full{width:100%;justify-content:center;padding:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.chip-blue{background:var(--accent-lt);color:var(--accent-dk)}
+.chip-warn{background:var(--warn-bg);color:var(--warn)}
+.chip-gray{background:var(--gray1);color:var(--gray5)}
+.test-item{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--gray1)}
+.test-item:last-child{border-bottom:none}
+.ti-name{font-size:15px;font-weight:500;color:var(--navy)}
+.ti-meta{display:flex;gap:8px;margin-top:5px;flex-wrap:wrap}
+.empty-state{text-align:center;padding:2.5rem 1rem;color:var(--gray4)}
+.empty-state i{font-size:36px;margin-bottom:.75rem;display:block;opacity:.4}
+.steps{display:flex;border-radius:10px;border:1px solid var(--gray2);overflow:hidden;margin-bottom:1.5rem}
+.step{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:500;color:var(--gray4);background:#fff;border-right:1px solid var(--gray2)}
+.step:last-child{border-right:none}
+.step i{display:block;font-size:14px;margin-bottom:3px}
+.step.active{background:var(--accent-lt);color:var(--accent);font-weight:600}
+.step.done{background:var(--gray0);color:var(--success)}
+.player{background:linear-gradient(135deg,var(--navy),var(--navy3));border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;color:#fff}
+.player-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;gap:10px}
+.player-title{font-size:15px;font-weight:600}
+.player-sub{font-size:12px;color:rgba(255,255,255,.5);margin-top:2px}
+.listen-chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.lc-ok{background:rgba(255,255,255,.18);color:#fff}
+.lc-warn{background:#f59e0b;color:#1c1c1c}
+.lc-done{background:#ef4444;color:#fff}
+.player-ctrl{display:flex;align-items:center;gap:14px}
+.play-btn{width:46px;height:46px;border-radius:50%;background:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:16px;flex-shrink:0;transition:.15s}
+.play-btn:hover{transform:scale(1.05)}.play-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.prog-wrap{flex:1}
+.prog-track{height:4px;background:rgba(255,255,255,.2);border-radius:2px;cursor:pointer;position:relative}
+.prog-fill{height:4px;background:#fff;border-radius:2px;width:0%;pointer-events:none}
+.prog-thumb{width:12px;height:12px;border-radius:50%;background:#fff;position:absolute;top:50%;transform:translateY(-50%);margin-left:-6px;pointer-events:none}
+.time-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5);margin-top:5px}
+.listen-blocked{background:rgba(0,0,0,.2);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;color:rgba(255,255,255,.7);margin-top:10px}
+.meta-bar{background:var(--navy);border-radius:10px;padding:.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;color:#fff}
+.mb-name{font-weight:600;font-size:15px}.mb-class{font-size:12px;color:rgba(255,255,255,.55);margin-top:1px}
+.mb-right{text-align:right}.mb-num{font-size:20px;font-weight:700}.mb-lbl{font-size:11px;color:rgba(255,255,255,.5)}
+.s-question{margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--gray1)}
+.s-question:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.s-q-txt{font-size:15px;font-weight:500;line-height:1.55;margin-bottom:.85rem}
+.q-lbl{color:var(--accent);font-weight:600;margin-right:5px}
+.s-opts{display:flex;flex-direction:column;gap:9px}
+.s-opt{display:flex;align-items:center;gap:11px;padding:11px 14px;border:1.5px solid var(--gray2);border-radius:9px;cursor:pointer;transition:.12s;user-select:none}
+.s-opt:hover{border-color:var(--accent);background:var(--accent-lt)}
+.s-opt.selected{border-color:var(--accent);background:var(--accent-lt)}
+.s-opt.correct{border-color:var(--success);background:var(--success-bg);cursor:default}
+.s-opt.wrong{border-color:var(--danger);background:var(--danger-bg);cursor:default}
+.s-opt.missed{border-color:var(--warn);background:var(--warn-bg);cursor:default}
+.s-opt.locked{cursor:default}
+.opt-bubble{width:28px;height:28px;border-radius:50%;background:var(--gray1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--gray5);flex-shrink:0;transition:.12s}
+.s-opt.selected .opt-bubble{background:var(--accent);color:#fff}
+.s-opt.correct .opt-bubble{background:var(--success);color:#fff}
+.s-opt.wrong .opt-bubble{background:var(--danger);color:#fff}
+.s-opt.missed .opt-bubble{background:var(--warn);color:#fff}
+.opt-txt{font-size:14px;flex:1}
+.opt-icon{margin-left:auto;font-size:14px}
+.result-hero{border-radius:14px;padding:2rem;text-align:center;margin-bottom:1rem}
+.result-hero.pass{background:var(--success-bg);border:2px solid var(--success-bd)}
+.result-hero.fail{background:var(--danger-bg);border:2px solid var(--danger-bd)}
+.r-score{font-size:56px;font-weight:700;line-height:1}
+.r-score.pass{color:var(--success)}.r-score.fail{color:var(--danger)}
+.r-pct{font-size:22px;font-weight:500;color:var(--gray5);margin-top:4px}
+.r-name{font-size:14px;color:var(--gray5);margin-top:8px}
+.r-msg{font-size:14px;font-weight:500;margin-top:6px}
+.r-msg.pass{color:var(--success)}.r-msg.fail{color:var(--danger)}
+.r-stats{display:flex;justify-content:center;gap:2rem;margin-top:1.25rem}
+.rstat-num{font-size:24px;font-weight:600;color:var(--navy)}.rstat-lbl{font-size:12px;color:var(--gray4);margin-top:2px}
+.alert{display:flex;align-items:flex-start;gap:9px;padding:11px 14px;border-radius:8px;font-size:13px;margin-top:10px}
+.alert i{margin-top:1px;flex-shrink:0}
+.alert-err{background:var(--danger-bg);border:1px solid var(--danger-bd);color:var(--danger)}
+.alert-ok{background:var(--success-bg);border:1px solid var(--success-bd);color:var(--success)}
+.alert-warn{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn)}
+.sheet-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--gray0);border-radius:8px;font-size:13px;color:var(--gray5);margin-top:12px;border:1px solid var(--gray2)}
+.hidden{display:none!important}
+.sec{display:none;padding-top:1.5rem}.sec.active{display:block}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-icon"><i class="fa-solid fa-headphones"></i></div>
+  <div>
+    <div class="logo-text">Listening Test</div>
+    <div class="logo-sub">THCS Chu Văn An — Khu vực học sinh</div>
+  </div>
+</header>
+
+<div class="page">
+  <!-- Chọn bài -->
+  <div class="sec active" id="sec-list">
+    <div class="card" style="margin-top:1.5rem">
+      <div class="card-title"><i class="fa-solid fa-book-open" style="margin-right:5px"></i>Chọn bài nghe</div>
+      <div id="loading-state" class="empty-state">
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+        <p>Đang tải danh sách bài nghe...</p>
+      </div>
+      <div id="test-list" class="hidden">
+        <div class="empty-state">
+          <i class="fa-solid fa-folder-open"></i>
+          <p>Chưa có bài nghe nào.<br>Giáo viên cần tạo bài trước.</p>
+        </div>
+      </div>
+      <div id="load-err" class="alert alert-err hidden">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>Không tải được danh sách bài. Kiểm tra kết nối mạng hoặc liên hệ giáo viên.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Làm bài -->
+  <div class="sec" id="sec-test">
+    <div class="steps" style="margin-top:1.5rem">
+      <div class="step active" id="step1"><i class="fa-solid fa-user"></i>Thông tin</div>
+      <div class="step" id="step2"><i class="fa-solid fa-headphones"></i>Nghe & làm</div>
+      <div class="step" id="step3"><i class="fa-solid fa-chart-bar"></i>Kết quả</div>
+    </div>
+
+    <!-- Nhập thông tin -->
+    <div class="card" id="info-card">
+      <div class="card-title">Thông tin học sinh</div>
+      <div class="grid2">
+        <div class="field">
+          <label class="lbl" for="st-name">Họ và tên <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="st-name" placeholder="Nguyễn Văn A">
+        </div>
+        <div class="field">
+          <label class="lbl" for="st-class">Lớp <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="st-class" placeholder="9A1">
+        </div>
+      </div>
+      <button class="btn btn-accent btn-full" onclick="confirmInfo()">
+        <i class="fa-solid fa-arrow-right"></i> Tiếp tục làm bài
+      </button>
+      <div id="info-err" class="alert alert-err hidden"><i class="fa-solid fa-xmark"></i> Vui lòng nhập đầy đủ họ tên và lớp.</div>
+    </div>
+
+    <!-- Phần nghe + câu hỏi -->
+    <div id="test-body" class="hidden">
+      <div class="meta-bar">
+        <div><div class="mb-name" id="mb-name"></div><div class="mb-class" id="mb-class"></div></div>
+        <div class="mb-right"><div class="mb-num" id="mb-answered">0/<span id="mb-total"></span></div><div class="mb-lbl">câu đã trả lời</div></div>
+      </div>
+
+      <!-- Player -->
+      <div class="player">
+        <div class="player-top">
+          <div><div class="player-title" id="pl-title"></div><div class="player-sub" id="pl-sub"></div></div>
+          <div class="listen-chip lc-ok" id="listen-chip"></div>
+        </div>
+        <div class="player-ctrl">
+          <button class="play-btn" id="play-btn" onclick="togglePlay()"><i class="fa-solid fa-play" id="play-icon"></i></button>
+          <div class="prog-wrap">
+            <div class="prog-track" id="prog-track" onclick="seekAudio(event)">
+              <div class="prog-fill" id="prog-fill"></div>
+              <div class="prog-thumb" id="prog-thumb" style="left:0%"></div>
+            </div>
+            <div class="time-row"><span id="cur-time">0:00</span><span id="dur-time">0:00</span></div>
+          </div>
+        </div>
+        <div id="blocked-msg" class="listen-blocked hidden"><i class="fa-solid fa-ban"></i> Đã hết lượt nghe. Hoàn thành và nộp bài.</div>
+      </div>
+
+      <!-- Câu hỏi -->
+      <div class="card">
+        <div class="card-title">Câu hỏi</div>
+        <div id="questions"></div>
+        <div style="border-top:1px solid var(--gray1);padding-top:1.25rem;margin-top:1.25rem">
+          <button class="btn btn-navy btn-full" id="submit-btn" onclick="submitTest()">
+            <i class="fa-solid fa-paper-plane"></i> Nộp bài
+          </button>
+          <div id="submit-err" class="alert alert-err hidden"><i class="fa-solid fa-xmark"></i> Vui lòng trả lời tất cả các câu hỏi trước khi nộp.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kết quả -->
+    <div id="result-wrap" class="hidden">
+      <div class="result-hero" id="result-hero"></div>
+      <div class="card">
+        <div class="card-title">Chi tiết đáp án</div>
+        <div id="result-detail"></div>
+      </div>
+      <div class="sheet-bar" id="sheet-bar"></div>
+      <div style="margin-top:1rem;text-align:center">
+        <button class="btn btn-ghost" onclick="backToList()"><i class="fa-solid fa-rotate-left"></i> Làm bài khác</button>
+      </div>
+    </div>
+
+    <div style="padding-top:.5rem">
+      <button class="btn btn-ghost" style="font-size:13px" onclick="backToList()"><i class="fa-solid fa-arrow-left"></i> Về danh sách</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  TRANG HỌC SINH — tải bài nghe từ Google Sheet (qua Apps Script)
+// ============================================================
+
+// ⚠️ QUAN TRỌNG: Dán URL Google Apps Script của bạn vào đây
+// Đây là URL công khai để ĐỌC danh sách bài — không phải mật khẩu, an toàn khi để trong code.
+const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbxWjzyXPN5QOyztEgivFCXRMsoOkRPyEzR5BQr44OxO16T9x86U4fJ910-K9C7dugiqXQ/exec';
+
+let tests = [];
+let cur = null;
+let answers = {};
+let listenCount = 0;
+let audio = null;
+let playing = false;
+let done = false;
+
+async function loadTests(){
+  document.getElementById('loading-state').classList.remove('hidden');
+  document.getElementById('test-list').classList.add('hidden');
+  document.getElementById('load-err').classList.add('hidden');
+  try{
+    const r = await fetch(SHEET_API_URL + '?action=getTests');
+    const d = await r.json();
+    tests = d.tests || [];
+    localStorage.setItem('lt_tests_cache', JSON.stringify(tests)); // cache phòng mất mạng
+  }catch(e){
+    // fallback: dùng cache cũ nếu có
+    try{ tests = JSON.parse(localStorage.getItem('lt_tests_cache')||'[]'); }
+    catch(e2){ tests = []; }
+    if(!tests.length){
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('load-err').classList.remove('hidden');
+      return;
+    }
+  }
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('test-list').classList.remove('hidden');
+  renderList();
+}
+
+function showSec(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    const el=document.getElementById('step'+i);
+    el.classList.remove('active','done');
+    if(i<n) el.classList.add('done');
+    else if(i===n) el.classList.add('active');
+  });
+}
+
+// ---- Danh sách bài ----
+function renderList(){
+  const wrap=document.getElementById('test-list');
+  if(!tests.length){
+    wrap.innerHTML='<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Chưa có bài nghe nào.<br>Giáo viên cần tạo bài trước.</p></div>';
+    return;
+  }
+  wrap.innerHTML=tests.map((t,i)=>`
+    <div class="test-item">
+      <div>
+        <div class="ti-name">${esc(t.name)}</div>
+        <div class="ti-meta">
+          <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${t.questions.length} câu</span>
+          <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe</span>
+          <span class="chip chip-gray"><i class="fa-solid fa-star"></i> ${t.total} điểm</span>
+          ${t.cls?`<span class="chip chip-gray"><i class="fa-solid fa-users"></i> ${esc(t.cls)}</span>`:''}
+        </div>
+      </div>
+      <button class="btn btn-accent" style="padding:8px 16px;font-size:13px" onclick="startTest(${i})">
+        Làm bài <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>`).join('');
+}
+
+// ---- Bắt đầu bài ----
+function startTest(i){
+  cur=tests[i]; answers={}; listenCount=0; done=false;
+  if(audio){audio.pause();audio=null;} playing=false;
+  document.getElementById('st-name').value='';
+  document.getElementById('st-class').value='';
+  document.getElementById('info-err').classList.add('hidden');
+  document.getElementById('submit-err').classList.add('hidden');
+  document.getElementById('submit-btn').disabled=false;
+  document.getElementById('info-card').classList.remove('hidden');
+  document.getElementById('test-body').classList.add('hidden');
+  document.getElementById('result-wrap').classList.add('hidden');
+  showSec('sec-test');
+  setStep(1);
+}
+
+function confirmInfo(){
+  const name=document.getElementById('st-name').value.trim();
+  const cls=document.getElementById('st-class').value.trim();
+  if(!name||!cls){document.getElementById('info-err').classList.remove('hidden');return;}
+  document.getElementById('info-err').classList.add('hidden');
+  document.getElementById('info-card').classList.add('hidden');
+  document.getElementById('mb-name').textContent=name;
+  document.getElementById('mb-class').textContent='Lớp '+cls;
+  document.getElementById('mb-total').textContent=cur.questions.length;
+  document.getElementById('mb-answered').childNodes[0].textContent='0/';
+  buildPlayer();
+  buildQuestions();
+  document.getElementById('test-body').classList.remove('hidden');
+  setStep(2);
+}
+
+// ---- Player ----
+function buildPlayer(){
+  document.getElementById('pl-title').textContent=cur.name;
+  document.getElementById('pl-sub').textContent=(cur.cls?'Lớp '+cur.cls+' · ':'')+cur.questions.length+' câu · '+cur.total+' điểm';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('prog-thumb').style.left='0%';
+  document.getElementById('cur-time').textContent='0:00';
+  document.getElementById('dur-time').textContent='0:00';
+  document.getElementById('play-icon').className='fa-solid fa-play';
+  document.getElementById('play-btn').disabled=false;
+  document.getElementById('blocked-msg').classList.add('hidden');
+  updateChip();
+  const id=driveId(cur.driveUrl)||'';
+  audio=new Audio(`https://drive.google.com/uc?export=open&id=${id}`);
+  audio.addEventListener('loadedmetadata',()=>{ document.getElementById('dur-time').textContent=fmt(audio.duration); });
+  audio.addEventListener('timeupdate',updateProg);
+  audio.addEventListener('ended',()=>{ document.getElementById('play-icon').className='fa-solid fa-play'; playing=false; });
+}
+
+function togglePlay(){
+  if(!audio||done) return;
+  if(playing){
+    audio.pause(); playing=false;
+    document.getElementById('play-icon').className='fa-solid fa-play';
+    return;
+  }
+  if(listenCount>=cur.maxListen){ blockAudio(); return; }
+  if(audio.currentTime===0||audio.ended){ listenCount++; updateChip(); }
+  audio.play();
+  playing=true;
+  document.getElementById('play-icon').className='fa-solid fa-pause';
+}
+
+function updateChip(){
+  const rem=cur.maxListen-listenCount;
+  const chip=document.getElementById('listen-chip');
+  if(rem<=0){chip.className='listen-chip lc-done';chip.textContent='Hết lượt nghe';blockAudio();}
+  else if(rem===1){chip.className='listen-chip lc-warn';chip.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Còn 1 lần';}
+  else{chip.className='listen-chip lc-ok';chip.textContent=`Còn ${rem}/${cur.maxListen} lần`;}
+}
+
+function blockAudio(){
+  if(playing){audio.pause();playing=false;}
+  document.getElementById('play-btn').disabled=true;
+  document.getElementById('play-icon').className='fa-solid fa-ban';
+  document.getElementById('blocked-msg').classList.remove('hidden');
+}
+
+function updateProg(){
+  if(!audio||!audio.duration) return;
+  const p=(audio.currentTime/audio.duration)*100;
+  document.getElementById('prog-fill').style.width=p+'%';
+  document.getElementById('prog-thumb').style.left=p+'%';
+  document.getElementById('cur-time').textContent=fmt(audio.currentTime);
+}
+
+function seekAudio(e){
+  if(!audio||!audio.duration) return;
+  const r=e.currentTarget.getBoundingClientRect();
+  audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration;
+}
+
+function fmt(s){return Math.floor(s/60)+':'+(Math.floor(s%60)<10?'0':'')+Math.floor(s%60)}
+
+// ---- Câu hỏi ----
+function buildQuestions(){
+  document.getElementById('questions').innerHTML=cur.questions.map((q,i)=>`
+    <div class="s-question" id="sq-${i}">
+      <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(q.text)}</div>
+      <div class="s-opts">
+        ${Object.entries(q.opts).map(([k,v])=>`
+          <div class="s-opt" id="so-${i}-${k}" onclick="pick(${i},'${k}')">
+            <div class="opt-bubble">${k}</div>
+            <span class="opt-txt">${esc(v)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function pick(qi,opt){
+  if(done) return;
+  answers[qi]=opt;
+  ['A','B','C','D'].forEach(o=>document.getElementById(`so-${qi}-${o}`)?.classList.remove('selected'));
+  document.getElementById(`so-${qi}-${opt}`)?.classList.add('selected');
+  document.getElementById('mb-answered').childNodes[0].textContent=Object.keys(answers).length+'/';
+}
+
+// ---- Nộp bài ----
+function submitTest(){
+  if(Object.keys(answers).length<cur.questions.length){
+    document.getElementById('submit-err').classList.remove('hidden');
+    document.getElementById('questions').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  document.getElementById('submit-err').classList.add('hidden');
+  done=true;
+  if(audio){audio.pause();playing=false;}
+  document.getElementById('play-btn').disabled=true;
+  document.getElementById('submit-btn').disabled=true;
+
+  let correct=0;
+  const detail=cur.questions.map((q,i)=>{
+    const chosen=answers[i];
+    const ok=chosen===q.correct;
+    if(ok) correct++;
+    return{chosen,answer:q.correct,ok,text:q.text,opts:q.opts};
+  });
+
+  const scored=Math.round((correct/cur.questions.length)*cur.total*10)/10;
+  const pct=Math.round((correct/cur.questions.length)*100);
+  const pass=pct>=(cur.passPercent||50);
+  const name=document.getElementById('st-name').value.trim();
+  const cls=document.getElementById('st-class').value.trim();
+
+  lockAnswers(detail);
+  showResult(name,cls,correct,cur.questions.length,scored,cur.total,pct,pass);
+  sendSheet(name,cls,correct,cur.questions.length,scored,pct,detail);
+  setStep(3);
+}
+
+function lockAnswers(detail){
+  detail.forEach((d,i)=>{
+    ['A','B','C','D'].forEach(o=>{
+      const el=document.getElementById(`so-${i}-${o}`);
+      if(!el) return;
+      el.classList.remove('selected'); el.classList.add('locked');
+      if(o===d.answer&&d.ok) el.classList.add('correct');
+      else if(o===d.chosen&&!d.ok){ el.classList.add('wrong'); el.innerHTML+=`<i class="fa-solid fa-xmark opt-icon" style="color:var(--danger)"></i>`; }
+      else if(o===d.answer&&!d.ok){ el.classList.add('missed'); el.innerHTML+=`<i class="fa-solid fa-check opt-icon" style="color:var(--warn)"></i>`; }
+    });
+  });
+}
+
+function showResult(name,cls,correct,total,scored,scoreRaw,pct,pass){
+  document.getElementById('result-hero').className='result-hero '+(pass?'pass':'fail');
+  document.getElementById('result-hero').innerHTML=`
+    <div class="r-score ${pass?'pass':'fail'}">${scored}/${scoreRaw}</div>
+    <div class="r-pct">${pct}%</div>
+    <div class="r-name">${esc(name)} · Lớp ${esc(cls)}</div>
+    <div class="r-msg ${pass?'pass':'fail'}">${pass?'<i class="fa-solid fa-circle-check"></i> Đạt yêu cầu':'<i class="fa-solid fa-circle-xmark"></i> Chưa đạt'}</div>
+    <div class="r-stats">
+      <div><div class="rstat-num" style="color:var(--success)">${correct}</div><div class="rstat-lbl">Câu đúng</div></div>
+      <div><div class="rstat-num" style="color:var(--danger)">${total-correct}</div><div class="rstat-lbl">Câu sai</div></div>
+      <div><div class="rstat-num">${total}</div><div class="rstat-lbl">Tổng câu</div></div>
+    </div>`;
+  document.getElementById('result-detail').innerHTML=detail_html(detail);
+  document.getElementById('result-wrap').classList.remove('hidden');
+  document.getElementById('test-body').classList.add('hidden');
+  document.getElementById('result-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+function detail_html(detail){
+  return detail.map((d,i)=>`
+    <div class="s-question">
+      <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(d.text)}</div>
+      <div class="s-opts">
+        ${Object.entries(d.opts).map(([k,v])=>{
+          let cls='locked';
+          let icon='';
+          if(k===d.answer&&d.ok){cls='correct locked';}
+          else if(k===d.chosen&&!d.ok){cls='wrong locked';icon=`<i class="fa-solid fa-xmark opt-icon" style="color:var(--danger)"></i>`;}
+          else if(k===d.answer&&!d.ok){cls='missed locked';icon=`<i class="fa-solid fa-check opt-icon" style="color:var(--warn)"></i>`;}
+          return `<div class="s-opt ${cls}"><div class="opt-bubble">${k}</div><span class="opt-txt">${esc(v)}</span>${icon}</div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function sendSheet(name,cls,correct,total,scored,pct,detail){
+  const bar=document.getElementById('sheet-bar');
+  bar.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Đang ghi kết quả...';
+  const payload={action:'submit',testName:cur.name,studentName:name,studentClass:cls,correct,total,scored,pct,timestamp:new Date().toLocaleString('vi-VN'),answers:detail.map((d,i)=>({q:i+1,chosen:d.chosen,correct:d.answer,ok:d.ok}))};
+  try{
+    await fetch(SHEET_API_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
+    bar.innerHTML='<i class="fa-solid fa-circle-check" style="color:var(--success)"></i> <span style="color:var(--success)">Đã ghi kết quả vào Google Sheet.</span>';
+  }catch(e){
+    bar.innerHTML='<i class="fa-solid fa-triangle-exclamation" style="color:var(--warn)"></i> <span style="color:var(--warn)">Không gửi được kết quả. Vui lòng báo giáo viên.</span>';
+  }
+}
+
+function backToList(){ if(audio){audio.pause();audio=null;} playing=false; showSec('sec-list'); loadTests(); }
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function driveId(url){const m=(url||'').match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null}
+
+// Khởi động
+loadTests();
+</script>
+</body>
+</html>
