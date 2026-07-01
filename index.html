@@ -382,7 +382,7 @@ function buildPlayers(){
 
   cur.parts.forEach((p,pi)=>{
     const id=driveId(p.driveUrl)||'';
-    const a=new Audio(`https://drive.google.com/uc?export=open&id=${id}`);
+    const a=new Audio(`https://drive.google.com/uc?export=download&id=${id}`);
     a.addEventListener('loadedmetadata',()=>{ const el=document.getElementById('dur-time-'+pi); if(el) el.textContent=fmt(a.duration); });
     a.addEventListener('timeupdate',()=>updateProg(pi));
     a.addEventListener('ended',()=>{ const ic=document.getElementById('play-icon-'+pi); if(ic) ic.className='fa-solid fa-play'; partAudios[pi].playing=false; });
