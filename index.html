@@ -103,6 +103,10 @@ input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,125,216,.12)
 .sa-input.wrong{border-color:var(--danger);background:var(--danger-bg);color:var(--danger)}
 .sa-correct-note{font-size:12px;color:var(--success);margin-top:6px;display:flex;align-items:center;gap:5px}
 .sa-wrong-note{font-size:12px;color:var(--danger);margin-top:6px;display:flex;align-items:center;gap:5px}
+.part-group-hd{display:flex;align-items:center;gap:8px;margin:1.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--accent-lt)}
+.part-group-hd:first-child{margin-top:0}
+.part-group-badge{background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px}
+.part-group-name{font-size:14px;font-weight:600;color:var(--navy)}
 .opt-icon{margin-left:auto;font-size:14px}
 .result-hero{border-radius:14px;padding:2rem;text-align:center;margin-bottom:1rem}
 .result-hero.pass{background:var(--success-bg);border:2px solid var(--success-bd)}
@@ -190,24 +194,8 @@ input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,125,216,.12)
         <div class="mb-right"><div class="mb-num" id="mb-answered">0/<span id="mb-total"></span></div><div class="mb-lbl">câu đã trả lời</div></div>
       </div>
 
-      <!-- Player -->
-      <div class="player">
-        <div class="player-top">
-          <div><div class="player-title" id="pl-title"></div><div class="player-sub" id="pl-sub"></div></div>
-          <div class="listen-chip lc-ok" id="listen-chip"></div>
-        </div>
-        <div class="player-ctrl">
-          <button class="play-btn" id="play-btn" onclick="togglePlay()"><i class="fa-solid fa-play" id="play-icon"></i></button>
-          <div class="prog-wrap">
-            <div class="prog-track" id="prog-track" onclick="seekAudio(event)">
-              <div class="prog-fill" id="prog-fill"></div>
-              <div class="prog-thumb" id="prog-thumb" style="left:0%"></div>
-            </div>
-            <div class="time-row"><span id="cur-time">0:00</span><span id="dur-time">0:00</span></div>
-          </div>
-        </div>
-        <div id="blocked-msg" class="listen-blocked hidden"><i class="fa-solid fa-ban"></i> Đã hết lượt nghe. Hoàn thành và nộp bài.</div>
-      </div>
+      <!-- Player(s) — mỗi Part 1 player riêng -->
+      <div id="players-wrap"></div>
 
       <!-- Câu hỏi -->
       <div class="card">
@@ -252,11 +240,20 @@ const SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbzk7ZFhLgPIkeuxDD
 
 let tests = [];
 let cur = null;
+let qFlat = [];        // câu hỏi đã gộp phẳng từ tất cả các Part, kèm partIndex
+let partAudios = [];   // trạng thái audio riêng cho mỗi Part: {audio, listenCount, playing}
 let answers = {};
-let listenCount = 0;
-let audio = null;
-let playing = false;
 let done = false;
+
+function migrateToParts(t){
+  if(t.parts) return t.parts;
+  return [{ name:'Toàn bài', driveUrl:t.driveUrl, questions:t.questions||[] }];
+}
+
+function totalQuestions(t){
+  if(t.parts) return t.parts.reduce((s,p)=>s+((p.questions||[]).length),0);
+  return (t.questions||[]).length;
+}
 
 async function loadTests(){
   document.getElementById('loading-state').classList.remove('hidden');
@@ -268,7 +265,6 @@ async function loadTests(){
     tests = d.tests || [];
     localStorage.setItem('lt_tests_cache', JSON.stringify(tests)); // cache phòng mất mạng
   }catch(e){
-    // fallback: dùng cache cũ nếu có
     try{ tests = JSON.parse(localStorage.getItem('lt_tests_cache')||'[]'); }
     catch(e2){ tests = []; }
     if(!tests.length){
@@ -303,27 +299,30 @@ function renderList(){
     wrap.innerHTML='<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Chưa có bài nghe nào.<br>Giáo viên cần tạo bài trước.</p></div>';
     return;
   }
-  wrap.innerHTML=tests.map((t,i)=>`
+  wrap.innerHTML=tests.map((t,i)=>{
+    const parts = migrateToParts(t);
+    return `
     <div class="test-item">
       <div>
         <div class="ti-name">${esc(t.name)}</div>
         <div class="ti-meta">
-          <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${t.questions.length} câu</span>
-          <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe</span>
+          <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${totalQuestions(t)} câu</span>
+          <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe/phần</span>
           <span class="chip chip-gray"><i class="fa-solid fa-star"></i> ${t.total} điểm</span>
+          ${parts.length>1?`<span class="chip chip-gray"><i class="fa-solid fa-layer-group"></i> ${parts.length} phần</span>`:''}
           ${t.cls?`<span class="chip chip-gray"><i class="fa-solid fa-users"></i> ${esc(t.cls)}</span>`:''}
         </div>
       </div>
       <button class="btn btn-accent" style="padding:8px 16px;font-size:13px" onclick="startTest(${i})">
         Làm bài <i class="fa-solid fa-arrow-right"></i>
       </button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ---- Bắt đầu bài ----
 function startTest(i){
-  cur=tests[i]; answers={}; listenCount=0; done=false;
-  if(audio){audio.pause();audio=null;} playing=false;
+  cur=tests[i]; answers={}; done=false; qFlat=[]; partAudios=[];
   document.getElementById('st-name').value='';
   document.getElementById('st-class').value='';
   document.getElementById('info-err').classList.add('hidden');
@@ -332,6 +331,7 @@ function startTest(i){
   document.getElementById('info-card').classList.remove('hidden');
   document.getElementById('test-body').classList.add('hidden');
   document.getElementById('result-wrap').classList.add('hidden');
+  document.getElementById('players-wrap').innerHTML='';
   showSec('sec-test');
   setStep(1);
 }
@@ -344,104 +344,148 @@ function confirmInfo(){
   document.getElementById('info-card').classList.add('hidden');
   document.getElementById('mb-name').textContent=name;
   document.getElementById('mb-class').textContent='Lớp '+cls;
-  document.getElementById('mb-total').textContent=cur.questions.length;
+
+  cur.parts = migrateToParts(cur);
+  qFlat = [];
+  cur.parts.forEach((p,pi)=>{ (p.questions||[]).forEach(q=>{ qFlat.push(Object.assign({},q,{partIndex:pi})); }); });
+
+  document.getElementById('mb-total').textContent=qFlat.length;
   document.getElementById('mb-answered').childNodes[0].textContent='0/';
-  buildPlayer();
+  buildPlayers();
   buildQuestions();
   document.getElementById('test-body').classList.remove('hidden');
   setStep(2);
 }
 
-// ---- Player ----
-function buildPlayer(){
-  document.getElementById('pl-title').textContent=cur.name;
-  document.getElementById('pl-sub').textContent=(cur.cls?'Lớp '+cur.cls+' · ':'')+cur.questions.length+' câu · '+cur.total+' điểm';
-  document.getElementById('prog-fill').style.width='0%';
-  document.getElementById('prog-thumb').style.left='0%';
-  document.getElementById('cur-time').textContent='0:00';
-  document.getElementById('dur-time').textContent='0:00';
-  document.getElementById('play-icon').className='fa-solid fa-play';
-  document.getElementById('play-btn').disabled=false;
-  document.getElementById('blocked-msg').classList.add('hidden');
-  updateChip();
-  const id=driveId(cur.driveUrl)||'';
-  audio=new Audio(`https://drive.google.com/uc?export=open&id=${id}`);
-  audio.addEventListener('loadedmetadata',()=>{ document.getElementById('dur-time').textContent=fmt(audio.duration); });
-  audio.addEventListener('timeupdate',updateProg);
-  audio.addEventListener('ended',()=>{ document.getElementById('play-icon').className='fa-solid fa-play'; playing=false; });
+// ---- Player(s) — mỗi Part 1 audio riêng, dùng chung số lần nghe tối đa ----
+function buildPlayers(){
+  const wrap=document.getElementById('players-wrap');
+  partAudios = cur.parts.map(()=>({audio:null, listenCount:0, playing:false}));
+  wrap.innerHTML = cur.parts.map((p,pi)=>`
+    <div class="player">
+      <div class="player-top">
+        <div><div class="player-title">${esc(p.name||('Phần '+(pi+1)))}</div><div class="player-sub">${(p.questions||[]).length} câu</div></div>
+        <div class="listen-chip lc-ok" id="listen-chip-${pi}"></div>
+      </div>
+      <div class="player-ctrl">
+        <button class="play-btn" id="play-btn-${pi}" onclick="togglePlay(${pi})"><i class="fa-solid fa-play" id="play-icon-${pi}"></i></button>
+        <div class="prog-wrap">
+          <div class="prog-track" id="prog-track-${pi}" onclick="seekAudio(event,${pi})">
+            <div class="prog-fill" id="prog-fill-${pi}"></div>
+            <div class="prog-thumb" id="prog-thumb-${pi}" style="left:0%"></div>
+          </div>
+          <div class="time-row"><span id="cur-time-${pi}">0:00</span><span id="dur-time-${pi}">0:00</span></div>
+        </div>
+      </div>
+      <div id="blocked-msg-${pi}" class="listen-blocked hidden"><i class="fa-solid fa-ban"></i> Đã hết lượt nghe phần này.</div>
+    </div>`).join('');
+
+  cur.parts.forEach((p,pi)=>{
+    const id=driveId(p.driveUrl)||'';
+    const a=new Audio(`https://drive.google.com/uc?export=open&id=${id}`);
+    a.addEventListener('loadedmetadata',()=>{ const el=document.getElementById('dur-time-'+pi); if(el) el.textContent=fmt(a.duration); });
+    a.addEventListener('timeupdate',()=>updateProg(pi));
+    a.addEventListener('ended',()=>{ const ic=document.getElementById('play-icon-'+pi); if(ic) ic.className='fa-solid fa-play'; partAudios[pi].playing=false; });
+    partAudios[pi].audio=a;
+    updateChip(pi);
+  });
 }
 
-function togglePlay(){
-  if(!audio||done) return;
-  if(playing){
-    audio.pause(); playing=false;
-    document.getElementById('play-icon').className='fa-solid fa-play';
+function togglePlay(pi){
+  if(done) return;
+  const st=partAudios[pi];
+  if(!st||!st.audio) return;
+  const icon=document.getElementById('play-icon-'+pi);
+  if(st.playing){
+    st.audio.pause(); st.playing=false;
+    if(icon) icon.className='fa-solid fa-play';
     return;
   }
-  if(listenCount>=cur.maxListen){ blockAudio(); return; }
-  if(audio.currentTime===0||audio.ended){ listenCount++; updateChip(); }
-  audio.play();
-  playing=true;
-  document.getElementById('play-icon').className='fa-solid fa-pause';
+  if(st.listenCount>=cur.maxListen){ blockAudio(pi); return; }
+  if(st.audio.currentTime===0||st.audio.ended){ st.listenCount++; updateChip(pi); }
+  st.audio.play();
+  st.playing=true;
+  if(icon) icon.className='fa-solid fa-pause';
 }
 
-function updateChip(){
-  const rem=cur.maxListen-listenCount;
-  const chip=document.getElementById('listen-chip');
-  if(rem<=0){chip.className='listen-chip lc-done';chip.textContent='Hết lượt nghe';blockAudio();}
+function updateChip(pi){
+  const st=partAudios[pi];
+  const rem=cur.maxListen-st.listenCount;
+  const chip=document.getElementById('listen-chip-'+pi);
+  if(!chip) return;
+  if(rem<=0){chip.className='listen-chip lc-done';chip.textContent='Hết lượt nghe';blockAudio(pi);}
   else if(rem===1){chip.className='listen-chip lc-warn';chip.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Còn 1 lần';}
   else{chip.className='listen-chip lc-ok';chip.textContent=`Còn ${rem}/${cur.maxListen} lần`;}
 }
 
-function blockAudio(){
-  if(playing){audio.pause();playing=false;}
-  document.getElementById('play-btn').disabled=true;
-  document.getElementById('play-icon').className='fa-solid fa-ban';
-  document.getElementById('blocked-msg').classList.remove('hidden');
+function blockAudio(pi){
+  const st=partAudios[pi];
+  if(!st) return;
+  if(st.playing){st.audio.pause();st.playing=false;}
+  const btn=document.getElementById('play-btn-'+pi);
+  const icon=document.getElementById('play-icon-'+pi);
+  const msg=document.getElementById('blocked-msg-'+pi);
+  if(btn) btn.disabled=true;
+  if(icon) icon.className='fa-solid fa-ban';
+  if(msg) msg.classList.remove('hidden');
 }
 
-function updateProg(){
-  if(!audio||!audio.duration) return;
-  const p=(audio.currentTime/audio.duration)*100;
-  document.getElementById('prog-fill').style.width=p+'%';
-  document.getElementById('prog-thumb').style.left=p+'%';
-  document.getElementById('cur-time').textContent=fmt(audio.currentTime);
+function updateProg(pi){
+  const st=partAudios[pi];
+  if(!st||!st.audio||!st.audio.duration) return;
+  const p=(st.audio.currentTime/st.audio.duration)*100;
+  const fill=document.getElementById('prog-fill-'+pi);
+  const thumb=document.getElementById('prog-thumb-'+pi);
+  const ct=document.getElementById('cur-time-'+pi);
+  if(fill) fill.style.width=p+'%';
+  if(thumb) thumb.style.left=p+'%';
+  if(ct) ct.textContent=fmt(st.audio.currentTime);
 }
 
-function seekAudio(e){
-  if(!audio||!audio.duration) return;
+function seekAudio(e,pi){
+  const st=partAudios[pi];
+  if(!st||!st.audio||!st.audio.duration) return;
   const r=e.currentTarget.getBoundingClientRect();
-  audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration;
+  st.audio.currentTime=((e.clientX-r.left)/r.width)*st.audio.duration;
 }
 
 function fmt(s){return Math.floor(s/60)+':'+(Math.floor(s%60)<10?'0':'')+Math.floor(s%60)}
 
-// ---- Câu hỏi ----
+// ---- Câu hỏi — nhóm theo Part ----
 function buildQuestions(){
-  document.getElementById('questions').innerHTML=cur.questions.map((q,i)=>{
+  let html='';
+  let lastPart=-1;
+  qFlat.forEach((q,i)=>{
+    if(q.partIndex!==lastPart){
+      lastPart=q.partIndex;
+      const p=cur.parts[lastPart];
+      html+=`<div class="part-group-hd"><span class="part-group-badge">Phần ${lastPart+1}</span><span class="part-group-name">${esc(p.name||('Phần '+(lastPart+1)))}</span></div>`;
+    }
     if(q.type==='sa'){
-      return `
+      html+=`
       <div class="s-question" id="sq-${i}">
         <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(q.text)}</div>
         <input type="text" class="sa-input" id="sa-${i}" placeholder="Nhập câu trả lời..." oninput="pickSA(${i}, this.value)" autocomplete="off">
       </div>`;
+    } else {
+      html+=`
+      <div class="s-question" id="sq-${i}">
+        <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(q.text)}</div>
+        <div class="s-opts">
+          ${Object.entries(q.opts).map(([k,v])=>`
+            <div class="s-opt" id="so-${i}-${k}" onclick="pick(${i},'${k}')">
+              <div class="opt-bubble">${k}</div>
+              <span class="opt-txt">${esc(v)}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
     }
-    return `
-    <div class="s-question" id="sq-${i}">
-      <div class="s-q-txt"><span class="q-lbl">${i+1}.</span>${esc(q.text)}</div>
-      <div class="s-opts">
-        ${Object.entries(q.opts).map(([k,v])=>`
-          <div class="s-opt" id="so-${i}-${k}" onclick="pick(${i},'${k}')">
-            <div class="opt-bubble">${k}</div>
-            <span class="opt-txt">${esc(v)}</span>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+  });
+  document.getElementById('questions').innerHTML=html;
 }
 
 function pickSA(qi, val){
-  const v = val.trim();
+  const v=val.trim();
   if(v) answers[qi]=v; else delete answers[qi];
   document.getElementById('mb-answered').childNodes[0].textContent=Object.keys(answers).length+'/';
 }
@@ -456,25 +500,25 @@ function pick(qi,opt){
 
 // ---- Nộp bài ----
 function submitTest(){
-  if(Object.keys(answers).length<cur.questions.length){
+  if(Object.keys(answers).length<qFlat.length){
     document.getElementById('submit-err').classList.remove('hidden');
     document.getElementById('questions').scrollIntoView({behavior:'smooth'});
     return;
   }
   document.getElementById('submit-err').classList.add('hidden');
   done=true;
-  if(audio){audio.pause();playing=false;}
-  document.getElementById('play-btn').disabled=true;
+  partAudios.forEach(st=>{ if(st.audio&&st.playing){ st.audio.pause(); st.playing=false; } });
+  document.querySelectorAll('.play-btn').forEach(b=>b.disabled=true);
   document.getElementById('submit-btn').disabled=true;
   document.querySelectorAll('.sa-input').forEach(inp=>inp.disabled=true);
 
   let correct=0;
-  const detail=cur.questions.map((q,i)=>{
+  const detail=qFlat.map((q,i)=>{
     const chosen=answers[i];
     let ok=false;
     if(q.type==='sa'){
-      const accepted = q.answer.split('|').map(a=>a.trim().toLowerCase()).filter(Boolean);
-      ok = accepted.includes((chosen||'').trim().toLowerCase());
+      const accepted=q.answer.split('|').map(a=>a.trim().toLowerCase()).filter(Boolean);
+      ok=accepted.includes((chosen||'').trim().toLowerCase());
       if(ok) correct++;
       return{type:'sa',chosen,answer:q.answer,ok,text:q.text};
     }
@@ -483,15 +527,15 @@ function submitTest(){
     return{type:'mc',chosen,answer:q.correct,ok,text:q.text,opts:q.opts};
   });
 
-  const scored=Math.round((correct/cur.questions.length)*cur.total*10)/10;
-  const pct=Math.round((correct/cur.questions.length)*100);
+  const scored=Math.round((correct/qFlat.length)*cur.total*10)/10;
+  const pct=Math.round((correct/qFlat.length)*100);
   const pass=pct>=(cur.passPercent||50);
   const name=document.getElementById('st-name').value.trim();
   const cls=document.getElementById('st-class').value.trim();
 
   lockAnswers(detail);
-  showResult(name,cls,correct,cur.questions.length,scored,cur.total,pct,pass);
-  sendSheet(name,cls,correct,cur.questions.length,scored,pct,detail);
+  showResult(name,cls,correct,qFlat.length,scored,cur.total,pct,pass);
+  sendSheet(name,cls,correct,qFlat.length,scored,pct,detail);
   setStep(3);
 }
 
@@ -580,7 +624,7 @@ async function sendSheet(name,cls,correct,total,scored,pct,detail){
   }
 }
 
-function backToList(){ if(audio){audio.pause();audio=null;} playing=false; showSec('sec-list'); loadTests(); }
+function backToList(){ partAudios.forEach(st=>{ if(st.audio) st.audio.pause(); }); partAudios=[]; showSec('sec-list'); loadTests(); }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function driveId(url){const m=(url||'').match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null}
 
