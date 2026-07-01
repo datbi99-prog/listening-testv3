@@ -88,6 +88,12 @@ textarea{resize:vertical;min-height:72px}
 .qtype-btn{flex:1;padding:8px 0;text-align:center;border:1px solid var(--gray2);border-radius:8px;background:#fff;font-size:13px;font-weight:500;color:var(--gray5);cursor:pointer;transition:.12s}
 .qtype-btn.active{background:var(--accent-lt);border-color:var(--accent);color:var(--accent-dk)}
 .sa-hint{font-size:12px;color:var(--gray4);margin-top:5px}
+.part-block{border:1.5px solid var(--gray2);border-radius:12px;padding:1.25rem;margin-bottom:1rem;background:var(--gray0)}
+.part-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem}
+.part-badge{font-size:12px;font-weight:700;color:#fff;background:var(--navy);padding:5px 13px;border-radius:20px}
+.part-audio-wrap{margin-top:8px}
+.part-q-wrap{margin-top:1rem}
+textarea.q-text{min-height:64px;line-height:1.5}
 .alert{display:flex;align-items:flex-start;gap:9px;padding:11px 14px;border-radius:8px;font-size:13px;margin-top:10px}
 .alert i{margin-top:1px;flex-shrink:0}
 .alert-err{background:var(--danger-bg);border:1px solid var(--danger-bd);color:var(--danger)}
@@ -247,27 +253,13 @@ textarea{resize:vertical;min-height:72px}
 
     <div class="card">
       <div class="card-hd">
-        <div class="card-title"><i class="fa-solid fa-headphones" style="margin-right:5px"></i>File audio</div>
-        <button class="btn btn-xs btn-ghost" onclick="previewAudio()"><i class="fa-solid fa-play"></i> Nghe thử</button>
+        <div class="card-title"><i class="fa-solid fa-layer-group" style="margin-right:5px"></i>Các phần nghe (Part)</div>
+        <button class="btn btn-accent btn-sm" onclick="addPart()"><i class="fa-solid fa-plus"></i> Thêm Part</button>
       </div>
-      <div class="field">
-        <label class="lbl">Google Drive link (MP3) <span style="color:var(--danger)">*</span></label>
-        <input type="url" id="e-drive" placeholder="https://drive.google.com/file/d/FILE_ID/view">
-      </div>
-      <div class="alert alert-info"><i class="fa-solid fa-circle-info"></i> File MP3 trên Drive → Chia sẻ → "Bất kỳ ai có đường liên kết" → Người xem → Copy link.</div>
-      <div id="audio-preview-wrap" class="hidden" style="margin-top:10px">
-        <audio id="audio-preview" controls style="width:100%;border-radius:8px"></audio>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd">
-        <div class="card-title"><i class="fa-solid fa-circle-question" style="margin-right:5px"></i>Câu hỏi (<span id="q-count">0</span> câu)</div>
-        <button class="btn btn-xs btn-ghost" onclick="addQ()"><i class="fa-solid fa-plus"></i> Thêm câu</button>
-      </div>
-      <div id="q-wrap"></div>
-      <button class="btn btn-ghost btn-sm" onclick="addQ()" style="margin-top:.75rem;width:100%;justify-content:center;border-style:dashed">
-        <i class="fa-solid fa-plus"></i> Thêm câu hỏi
+      <div class="alert alert-info"><i class="fa-solid fa-circle-info"></i> Mỗi Part có 1 file audio riêng và câu hỏi riêng. Tất cả Part dùng chung số lần nghe tối đa đã đặt ở trên.</div>
+      <div id="parts-wrap" style="margin-top:1rem"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addPart()" style="margin-top:.75rem;width:100%;justify-content:center;border-style:dashed">
+        <i class="fa-solid fa-plus"></i> Thêm Part mới
       </button>
     </div>
 
@@ -327,7 +319,7 @@ async function sha256(str){
 // ============================================================
 let tests = [];
 let editIdx = -1;
-let qCount = 0;
+let partCount = 0;
 let loggedIn = false;
 let savingInProgress = false;
 
@@ -445,10 +437,11 @@ async function renderTestList(){
       <div>
         <div class="ti-name">${esc(t.name)}</div>
         <div class="ti-meta">
-          <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${t.questions.length} câu</span>
-          <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe</span>
+          <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${totalQuestions(t)} câu</span>
+          <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe/phần</span>
           <span class="chip chip-gray"><i class="fa-solid fa-star"></i> ${t.total} điểm</span>
           <span class="chip chip-gray">Đạt: ${t.passPercent||50}%</span>
+          ${migrateToParts(t).length>1?`<span class="chip chip-gray"><i class="fa-solid fa-layer-group"></i> ${migrateToParts(t).length} phần</span>`:''}
           ${t.cls?`<span class="chip chip-gray"><i class="fa-solid fa-users"></i> ${esc(t.cls)}</span>`:''}
         </div>
       </div>
@@ -463,18 +456,26 @@ async function renderTestList(){
 // ============================================================
 //  EDITOR
 // ============================================================
+function migrateToParts(t){
+  if(t.parts) return t.parts;
+  return [{ name:'Toàn bài', driveUrl:t.driveUrl||'', questions:t.questions||[] }];
+}
+
+function totalQuestions(t){
+  return migrateToParts(t).reduce((s,p)=>s+((p.questions||[]).length),0);
+}
+
 function openEditor(idx){
-  editIdx=idx; qCount=0;
+  editIdx=idx; partCount=0;
   document.getElementById('editor-title').textContent = idx===-1?'Tạo bài nghe mới':'Chỉnh sửa bài nghe';
-  document.getElementById('q-wrap').innerHTML='';
-  document.getElementById('audio-preview-wrap').classList.add('hidden');
+  document.getElementById('parts-wrap').innerHTML='';
   document.getElementById('preview-card').style.display='none';
   if(idx===-1){
-    ['e-name','e-cls','e-drive'].forEach(id=>document.getElementById(id).value='');
+    ['e-name','e-cls'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('e-maxl').value=2;
     document.getElementById('e-total').value=10;
     document.getElementById('e-pass').value=50;
-    addQ();
+    addPart();
   } else {
     const t=tests[idx];
     document.getElementById('e-name').value=t.name;
@@ -482,8 +483,7 @@ function openEditor(idx){
     document.getElementById('e-maxl').value=t.maxListen;
     document.getElementById('e-total').value=t.total;
     document.getElementById('e-pass').value=t.passPercent||50;
-    document.getElementById('e-drive').value=t.driveUrl||'';
-    t.questions.forEach(q=>addQ(q));
+    migrateToParts(t).forEach(p=>addPart(p));
   }
   document.getElementById('editor-wrap').classList.remove('hidden');
   document.getElementById('editor-wrap').scrollIntoView({behavior:'smooth'});
@@ -491,26 +491,86 @@ function openEditor(idx){
 
 function closeEditor(){ document.getElementById('editor-wrap').classList.add('hidden'); }
 
-function addQ(data){
-  qCount++;
-  const n=qCount;
-  const type = data ? (data.type||'mc') : 'mc';
-  const wrap=document.getElementById('q-wrap');
+// ---- Quản lý Part ----
+function addPart(data){
+  partCount++;
+  const pid=partCount;
+  const wrap=document.getElementById('parts-wrap');
   const div=document.createElement('div');
-  div.className='q-builder'; div.dataset.qid=n;
+  div.className='part-block'; div.dataset.partId=pid;
+  const defaultName = data&&data.name ? data.name : ('Part '+pid);
+  div.innerHTML=`
+    <div class="part-hd">
+      <span class="part-badge">Phần ${pid}</span>
+      <button class="q-del" onclick="this.closest('.part-block').remove();renumberParts()" title="Xoá Part"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label class="lbl">Tên Part</label>
+        <input type="text" class="part-name" value="${esc(defaultName)}">
+      </div>
+      <div class="field">
+        <label class="lbl">Link Google Drive (MP3) <span style="color:var(--danger)">*</span></label>
+        <input type="url" class="part-drive" value="${esc(data?data.driveUrl:'')}" placeholder="https://drive.google.com/file/d/FILE_ID/view">
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-xs" onclick="previewPartAudio(this)"><i class="fa-solid fa-play"></i> Nghe thử</button>
+    <div class="part-audio-wrap hidden">
+      <audio class="part-audio-el" controls style="width:100%;border-radius:8px"></audio>
+    </div>
+    <div class="part-q-wrap"></div>
+    <button class="btn btn-ghost btn-sm add-q-btn" style="margin-top:.75rem;width:100%;justify-content:center;border-style:dashed" onclick="addQToPart(this)">
+      <i class="fa-solid fa-plus"></i> Thêm câu hỏi cho phần này
+    </button>`;
+  wrap.appendChild(div);
+  if(data&&data.questions&&data.questions.length){
+    const addBtn=div.querySelector('.add-q-btn');
+    data.questions.forEach(q=>addQToPart(addBtn,q));
+  }
+  renumberParts();
+}
+
+function renumberParts(){
+  document.querySelectorAll('.part-block').forEach((pd,i)=>{
+    const badge=pd.querySelector('.part-badge');
+    if(badge) badge.textContent='Phần '+(i+1);
+  });
+}
+
+function previewPartAudio(btn){
+  const partDiv=btn.closest('.part-block');
+  const url=partDiv.querySelector('.part-drive').value.trim();
+  if(!url){alert('Nhập link Google Drive cho Part này trước.');return;}
+  const id=driveId(url);
+  if(!id){alert('Không nhận ra link Drive.');return;}
+  const wrap=partDiv.querySelector('.part-audio-wrap');
+  const el=partDiv.querySelector('.part-audio-el');
+  el.src=`https://drive.google.com/uc?export=open&id=${id}`;
+  wrap.classList.remove('hidden');
+}
+
+// ---- Quản lý câu hỏi trong 1 Part ----
+function addQToPart(btn,data){
+  const partDiv=btn.closest('.part-block');
+  const qWrap=partDiv.querySelector('.part-q-wrap');
+  const qIndex=qWrap.querySelectorAll('.q-builder').length+1;
+  const uid=partDiv.dataset.partId+'-'+qIndex;
+  const type=data?(data.type||'mc'):'mc';
+  const div=document.createElement('div');
+  div.className='q-builder'; div.dataset.uid=uid;
   div.innerHTML=`
     <div class="q-hd">
-      <span class="q-num">Câu ${n}</span>
-      <button class="q-del" onclick="this.closest('.q-builder').remove();updateQCount()" title="Xoá câu"><i class="fa-solid fa-xmark"></i></button>
+      <span class="q-num">Câu ${qIndex}</span>
+      <button class="q-del" onclick="this.closest('.q-builder').remove()" title="Xoá câu"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="qtype-toggle">
-      <button type="button" class="qtype-btn ${type==='mc'?'active':''}" onclick="setQType(this,${n},'mc')"><i class="fa-solid fa-list-check"></i> Trắc nghiệm</button>
-      <button type="button" class="qtype-btn ${type==='sa'?'active':''}" onclick="setQType(this,${n},'sa')"><i class="fa-solid fa-pen"></i> Tự luận</button>
+      <button type="button" class="qtype-btn ${type==='mc'?'active':''}" onclick="setQType(this,0,'mc')"><i class="fa-solid fa-list-check"></i> Trắc nghiệm</button>
+      <button type="button" class="qtype-btn ${type==='sa'?'active':''}" onclick="setQType(this,0,'sa')"><i class="fa-solid fa-pen"></i> Tự luận</button>
     </div>
     <input type="hidden" class="q-type" value="${type}">
     <div class="field" style="margin-bottom:.75rem">
       <label class="lbl">Nội dung câu hỏi</label>
-      <input type="text" class="q-text" value="${esc(data?data.text:'')}">
+      <textarea class="q-text" rows="2">${esc(data?data.text:'')}</textarea>
     </div>
     <div class="q-mc-body" style="${type==='sa'?'display:none':''}">
       <div class="opts-grid">
@@ -518,7 +578,7 @@ function addQ(data){
       </div>
       <div class="correct-row">
         <span>Đáp án đúng:</span>
-        ${['A','B','C','D'].map(o=>`<label class="correct-opt"><input type="radio" name="correct-${n}" value="${o}" ${data&&data.correct===o?'checked':''}> ${o}</label>`).join('')}
+        ${['A','B','C','D'].map(o=>`<label class="correct-opt"><input type="radio" name="correct-${uid}" value="${o}" ${data&&data.correct===o?'checked':''}> ${o}</label>`).join('')}
       </div>
     </div>
     <div class="q-sa-body" style="${type==='mc'?'display:none':''}">
@@ -528,8 +588,7 @@ function addQ(data){
         <div class="sa-hint">Có thể nhập nhiều đáp án chấp nhận được, ngăn cách bởi dấu <strong>|</strong> — VD: <code>museum|the museum</code>. Không phân biệt hoa/thường, tự bỏ khoảng trắng dư.</div>
       </div>
     </div>`;
-  wrap.appendChild(div);
-  updateQCount();
+  qWrap.appendChild(div);
 }
 
 function setQType(btn,n,type){
@@ -541,48 +600,49 @@ function setQType(btn,n,type){
   block.querySelector('.q-sa-body').style.display = type==='sa' ? '' : 'none';
 }
 
-function updateQCount(){ document.getElementById('q-count').textContent=document.querySelectorAll('.q-builder').length; }
-
-function previewAudio(){
-  const url=document.getElementById('e-drive').value.trim();
-  if(!url){alert('Nhập link Google Drive trước.');return;}
-  const id=driveId(url);
-  if(!id){alert('Không nhận ra link Drive.');return;}
-  document.getElementById('audio-preview').src=`https://drive.google.com/uc?export=open&id=${id}`;
-  document.getElementById('audio-preview-wrap').classList.remove('hidden');
-}
-
 async function saveTest(){
   const name=document.getElementById('e-name').value.trim();
   const cls=document.getElementById('e-cls').value.trim();
   const maxListen=parseInt(document.getElementById('e-maxl').value)||2;
   const total=parseInt(document.getElementById('e-total').value)||10;
   const passPercent=parseInt(document.getElementById('e-pass').value)||50;
-  const driveUrl=document.getElementById('e-drive').value.trim();
   if(!name){alert('Nhập tên bài test.');return;}
-  if(!driveUrl){alert('Nhập link Google Drive.');return;}
-  const blocks=document.querySelectorAll('.q-builder');
-  if(!blocks.length){alert('Thêm ít nhất 1 câu hỏi.');return;}
-  let questions=[]; let ok=true;
-  blocks.forEach((b,i)=>{
-    const text=b.querySelector('.q-text').value.trim();
-    const qtype=b.querySelector('.q-type').value;
-    if(!text){alert(`Câu ${i+1}: thiếu nội dung câu hỏi.`);ok=false;return;}
-    if(qtype==='mc'){
-      const opts={A:b.querySelector('.opt-A').value.trim(),B:b.querySelector('.opt-B').value.trim(),C:b.querySelector('.opt-C').value.trim(),D:b.querySelector('.opt-D').value.trim()};
-      const corr=b.querySelector('input[type=radio]:checked');
-      if(!opts.A||!opts.B||!opts.C||!opts.D){alert(`Câu ${i+1}: thiếu đáp án A/B/C/D.`);ok=false;return;}
-      if(!corr){alert(`Câu ${i+1}: chưa chọn đáp án đúng.`);ok=false;return;}
-      questions.push({type:'mc',text,opts,correct:corr.value});
-    } else {
-      const answer=b.querySelector('.sa-answer').value.trim();
-      if(!answer){alert(`Câu ${i+1}: chưa nhập đáp án mẫu.`);ok=false;return;}
-      questions.push({type:'sa',text,answer});
-    }
+
+  const partBlocks=document.querySelectorAll('.part-block');
+  if(!partBlocks.length){alert('Thêm ít nhất 1 Part.');return;}
+
+  let parts=[]; let ok=true;
+  partBlocks.forEach((pd,pIdx)=>{
+    if(!ok) return;
+    const pname=pd.querySelector('.part-name').value.trim()||`Part ${pIdx+1}`;
+    const driveUrl=pd.querySelector('.part-drive').value.trim();
+    if(!driveUrl){alert(`${pname}: chưa nhập link Google Drive.`);ok=false;return;}
+    const qBlocks=pd.querySelectorAll('.q-builder');
+    if(!qBlocks.length){alert(`${pname}: chưa có câu hỏi nào.`);ok=false;return;}
+    let questions=[];
+    qBlocks.forEach((b,i)=>{
+      if(!ok) return;
+      const text=b.querySelector('.q-text').value.trim();
+      const qtype=b.querySelector('.q-type').value;
+      if(!text){alert(`${pname} - câu ${i+1}: thiếu nội dung câu hỏi.`);ok=false;return;}
+      if(qtype==='mc'){
+        const opts={A:b.querySelector('.opt-A').value.trim(),B:b.querySelector('.opt-B').value.trim(),C:b.querySelector('.opt-C').value.trim(),D:b.querySelector('.opt-D').value.trim()};
+        const corr=b.querySelector('input[type=radio]:checked');
+        if(!opts.A||!opts.B||!opts.C||!opts.D){alert(`${pname} - câu ${i+1}: thiếu đáp án A/B/C/D.`);ok=false;return;}
+        if(!corr){alert(`${pname} - câu ${i+1}: chưa chọn đáp án đúng.`);ok=false;return;}
+        questions.push({type:'mc',text,opts,correct:corr.value});
+      } else {
+        const answer=b.querySelector('.sa-answer').value.trim();
+        if(!answer){alert(`${pname} - câu ${i+1}: chưa nhập đáp án mẫu.`);ok=false;return;}
+        questions.push({type:'sa',text,answer});
+      }
+    });
+    if(!ok) return;
+    parts.push({name:pname, driveUrl, questions});
   });
   if(!ok) return;
 
-  const obj={name,cls,maxListen,total,passPercent,driveUrl,questions};
+  const obj={name,cls,maxListen,total,passPercent,parts};
   if(editIdx>=0) obj.id = tests[editIdx].id; // giữ id cũ khi sửa
 
   const saveBtn=document.querySelector('#editor-wrap .btn-navy');
@@ -629,15 +689,21 @@ async function deleteTest(i){
 // ============================================================
 function showPreview(i){
   const t=tests[i];
+  const parts=migrateToParts(t);
   const card=document.getElementById('preview-card');
   document.getElementById('preview-body').innerHTML=`
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem">
-      <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${t.questions.length} câu</span>
-      <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe</span>
+      <span class="chip chip-blue"><i class="fa-solid fa-circle-question"></i> ${totalQuestions(t)} câu</span>
+      <span class="chip chip-warn"><i class="fa-solid fa-headphones"></i> ${t.maxListen} lần nghe/phần</span>
       <span class="chip chip-gray"><i class="fa-solid fa-star"></i> ${t.total} điểm</span>
       <span class="chip chip-green"><i class="fa-solid fa-check"></i> Đạt từ ${t.passPercent||50}%</span>
     </div>
-    ${t.questions.map((q,idx)=>`
+    ${parts.map((p,pi)=>`
+      <div class="part-group-hd" style="display:flex;align-items:center;gap:8px;margin:1.25rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--accent-lt)">
+        <span class="chip" style="background:var(--navy);color:#fff">Phần ${pi+1}</span>
+        <span style="font-size:14px;font-weight:600;color:var(--navy)">${esc(p.name||('Phần '+(pi+1)))}</span>
+      </div>
+      ${(p.questions||[]).map((q,idx)=>`
       <div style="margin-bottom:1.25rem">
         <div class="s-q-txt"><span class="q-lbl">${idx+1}.</span>${esc(q.text)} ${q.type==='sa'?'<span class="chip chip-gray" style="margin-left:6px">Tự luận</span>':''}</div>
         ${q.type==='sa'
@@ -648,7 +714,8 @@ function showPreview(i){
             <span style="font-size:14px;flex:1">${esc(v)}</span>
             ${k===q.correct?'<i class="fa-solid fa-check" style="color:var(--success);margin-left:auto"></i>':''}
           </div>`).join('')}
-      </div>`).join('')}`;
+      </div>`).join('')}
+    `).join('')}`;
   card.style.display='block';
   card.scrollIntoView({behavior:'smooth'});
 }
